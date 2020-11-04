@@ -1,0 +1,7 @@
+version: "3"
+services:
+  previewer:
+    image: demacr/image_previewer:latest
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
