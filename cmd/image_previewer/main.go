@@ -17,7 +17,10 @@ import (
 )
 
 func main() {
-	fc := cacher.NewCache(10)
+	fc, err := cacher.NewCache(10)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if fc == nil {
 		log.Fatal("empty filecache")
 	}

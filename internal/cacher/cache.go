@@ -1,9 +1,9 @@
 package cacher //nolint:golint,stylecheck
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base32"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/Demacr/image_previewer/internal/previewer"
+	"github.com/pkg/errors"
 )
 
 type Cache interface {
@@ -42,9 +43,13 @@ func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImag
 		return result, nil
 	}
 	client := http.Client{}
-	resp, err := client.Get("http://" + url)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", "http://"+url, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error during creating request")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "error during getting image")
 	}
 	defer resp.Body.Close()
 
@@ -54,7 +59,7 @@ func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImag
 
 	previwedImage, err := previewer.Preview(resp.Body, width, height)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error during image previewing")
 	}
 
 	result := &DownloadedImage{
@@ -63,7 +68,7 @@ func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImag
 	}
 
 	if err = lc.set(key, result); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error during saving previewed image")
 	}
 	result, _ = lc.get(key)
 	return result, nil
@@ -88,12 +93,12 @@ func (lc *lruCache) set(key string, value *DownloadedImage) error {
 
 		fd, err := os.Create("cache/" + key)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "error during create cached image")
 		}
 		defer fd.Close()
 
 		if _, err = io.Copy(fd, value.Buffer); err != nil {
-			return err
+			return errors.Wrap(err, "error during saving image")
 		}
 	}
 	return nil
@@ -128,11 +133,13 @@ type queueItem struct {
 	key   string
 }
 
-func NewCache(capacity int) Cache {
-	os.Mkdir("cache", os.ModePerm)
+func NewCache(capacity int) (Cache, error) {
+	if err := os.Mkdir("cache", os.ModePerm); err != nil {
+		return nil, errors.Wrap(err, "error during creating cache folder")
+	}
 	return &lruCache{
 		capacity: capacity,
 		queue:    NewList(),
 		items:    map[string]cacheItem{},
-	}
+	}, nil
 }

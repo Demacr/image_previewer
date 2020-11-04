@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/caarlos0/env"
+	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -13,7 +14,7 @@ type Config struct {
 func Configure() (*Config, error) {
 	config := &Config{}
 	if err := env.Parse(config); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error during parsing env variables")
 	}
 	return config, nil
 }
