@@ -19,7 +19,7 @@ import (
 type Cache interface {
 	GetImage(url string, width int, height int) (*DownloadedImage, error)
 	set(key string, value *DownloadedImage) error // Добавить значение в кэш по ключу
-	get(key string) (*DownloadedImage, bool)      // Получить значение из кэша по ключу
+	get(key string) (*DownloadedImage, error)     // Получить значение из кэша по ключу
 	clear()                                       // Очистить кэш
 }
 
@@ -38,10 +38,15 @@ type DownloadedImage struct {
 func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImage, error) {
 	nameBytes := sha256.Sum256([]byte(fmt.Sprintf("%v%v%v", url, width, height)))
 	key := base32.StdEncoding.EncodeToString(nameBytes[:])
-	if result, ok := lc.get(key); ok {
+	result, err := lc.get(key)
+	if err != nil {
+		return nil, errors.Wrap(err, "error during getting image from disk cache")
+	}
+	if result != nil {
 		log.Println("get image from cache")
 		return result, nil
 	}
+
 	client := http.Client{}
 	req, err := http.NewRequestWithContext(context.Background(), "GET", "http://"+url, nil)
 	if err != nil {
@@ -62,7 +67,7 @@ func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImag
 		return nil, errors.Wrap(err, "error during image previewing")
 	}
 
-	result := &DownloadedImage{
+	result = &DownloadedImage{
 		Buffer: previwedImage,
 		Header: resp.Header,
 	}
@@ -70,7 +75,10 @@ func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImag
 	if err = lc.set(key, result); err != nil {
 		return nil, errors.Wrap(err, "error during saving previewed image")
 	}
-	result, _ = lc.get(key)
+	result, err = lc.get(key)
+	if err != nil {
+		return nil, errors.Wrap(err, "error during getting image from disk cache (new)")
+	}
 	return result, nil
 }
 
@@ -104,7 +112,7 @@ func (lc *lruCache) set(key string, value *DownloadedImage) error {
 	return nil
 }
 
-func (lc *lruCache) get(key string) (value *DownloadedImage, ok bool) {
+func (lc *lruCache) get(key string) (value *DownloadedImage, err error) {
 	lc.mutex.Lock()
 	defer lc.mutex.Unlock()
 
@@ -115,7 +123,7 @@ func (lc *lruCache) get(key string) (value *DownloadedImage, ok bool) {
 		// fs
 		fd, err := os.Open("cache/" + key)
 		if err != nil {
-			return // todo: return error
+			return value, errors.Wrap(err, "error during open image file")
 		}
 		value.Buffer = fd
 	}
