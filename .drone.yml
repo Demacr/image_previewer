@@ -5,11 +5,15 @@ name: image_previewer
 steps:
 - name: build
   image: demacr/docker:dind
+  environment:
+    DOCKERHUB_TOKEN:
+      from_secret: DOCKERHUB_TOKEN
   volumes:
   - name: dockersock
     path: /var/run
   commands:
   - sleep 5 # give docker enough time to start
+  - docker login -u demacr -p $DOCKERHUB_TOKEN
   - make build-push
 
 services:
