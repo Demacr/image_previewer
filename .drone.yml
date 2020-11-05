@@ -1,0 +1,29 @@
+kind: pipeline
+type: docker
+name: image_previewer
+
+steps:
+- name: build
+  image: demacr/docker:dind
+  volumes:
+  - name: dockersock
+    path: /var/run
+  commands:
+  - sleep 5 # give docker enough time to start
+  - make build-push
+
+services:
+- name: docker
+  image: docker:dind
+  privileged: true
+  volumes:
+  - name: dockersock
+    path: /var/run
+
+volumes:
+- name: dockersock
+  temp: {}
+
+trigger:
+  branch:
+  - master

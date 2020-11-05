@@ -1,0 +1,21 @@
+version: "3"
+services:
+  previewer:
+    image: demacr/image_previewer:latest
+    container_name: previewer
+    ports:
+      - "8080:8080"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: 8080
+      CACHE_CAPACITY: 100
+    restart: always
+
+  nginx:
+    image: nginx:1.19.3-alpine
+    container_name: nginx
+    expose:
+      - "80"
+    volumes:
+      - ../test/nginx/image.conf:/etc/nginx/conf.d/image.conf
+      - ../test/nginx/image.jpg:/usr/share/nginx/html/image.jpg
