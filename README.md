@@ -1,0 +1,2 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/Demacr/image_previewer)](https://goreportcard.com/report/github.com/Demacr/image_previewer)
+[![Build Status](https://ci.dkserver.cloud/api/badges/Demacr/image_previewer/status.svg)](https://ci.dkserver.cloud/Demacr/image_previewer)
