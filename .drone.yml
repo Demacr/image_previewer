@@ -3,6 +3,10 @@ type: docker
 name: image_previewer
 
 steps:
+- name: lint
+  image: golangci/golangci-lint:v1.32.2-alpine
+  commands:
+    - golangci-lint run ./...
 - name: build
   image: demacr/docker:dind
   environment:
