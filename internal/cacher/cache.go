@@ -108,6 +108,7 @@ func (lc *lruCache) set(key string, value *DownloadedImage) error {
 		if _, err = io.Copy(fd, value.Buffer); err != nil {
 			return errors.Wrap(err, "error during saving image")
 		}
+		value.Buffer.Close()
 	}
 	return nil
 }
@@ -142,7 +143,7 @@ type queueItem struct {
 }
 
 func NewCache(capacity int) (Cache, error) {
-	if err := os.Mkdir("cache", os.ModePerm); err != nil {
+	if err := os.MkdirAll("cache", os.ModePerm); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error during creating cache folder")
 	}
 	return &lruCache{

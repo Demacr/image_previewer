@@ -7,6 +7,17 @@ steps:
   image: golangci/golangci-lint:v1.32.2-alpine
   commands:
     - golangci-lint run ./...
+- name: "unit tests"
+  image: golang
+  commands:
+    - make test-unit
+- name: "integration tests"
+  image: demacr/docker:dind
+  volumes:
+  - name: dockersock
+    path: /var/run
+  commands:
+    - make test-integration
 - name: build
   image: demacr/docker:dind
   environment:
