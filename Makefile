@@ -26,7 +26,7 @@ run:
 run-local:
 	./image_previewer
 
-lint: install-lint-deps
+lint:
 	golangci-lint run ./...
 
 clean:
