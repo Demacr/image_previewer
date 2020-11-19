@@ -47,7 +47,7 @@ func (p *previewer) GetImage(url string, width int, height int) (*domain.Downloa
 
 	result, err = client.GetImage(url)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error during getting image")
 	}
 
 	result.Buffer, err = Preview(result.Buffer, width, height)
