@@ -3,15 +3,15 @@ package server
 import (
 	"net/http"
 
-	"github.com/Demacr/image_previewer/internal/cacher"
+	domain "github.com/Demacr/image_previewer/internal/domain/previewer"
 )
 
 type Router struct {
 	rootHandler *RootHandler
 }
 
-func NewRouter(fc cacher.Cache) *Router {
-	return &Router{rootHandler: newRootHandler(fc)}
+func NewRouter(p domain.Previewer) *Router {
+	return &Router{rootHandler: newRootHandler(p)}
 }
 
 func (router *Router) RootHandler() http.Handler {

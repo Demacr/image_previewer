@@ -7,15 +7,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Demacr/image_previewer/internal/cacher"
+	domain "github.com/Demacr/image_previewer/internal/domain/previewer"
 )
 
 type FillHandler struct {
-	fc cacher.Cache
+	p domain.Previewer
 }
 
-func newFillHandler(fc cacher.Cache) *FillHandler {
-	return &FillHandler{fc: fc}
+func newFillHandler(p domain.Previewer) *FillHandler {
+	return &FillHandler{p: p}
 }
 
 func (h *FillHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,7 @@ func (h *FillHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	imageURL := strings.TrimPrefix(r.URL.Path, "/")
-	image, err := h.fc.GetImage(imageURL, width, height)
+	image, err := h.p.GetImage(imageURL, width, height)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Println("getimage:", err)

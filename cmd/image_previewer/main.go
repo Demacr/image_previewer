@@ -13,6 +13,7 @@ import (
 
 	"github.com/Demacr/image_previewer/internal/cacher"
 	"github.com/Demacr/image_previewer/internal/config"
+	"github.com/Demacr/image_previewer/internal/domain/previewer"
 	"github.com/Demacr/image_previewer/internal/http/server"
 )
 
@@ -24,12 +25,13 @@ func main() {
 	if fc == nil {
 		log.Fatal("empty filecache")
 	}
+	p := previewer.NewPreviewer(fc)
 	wg := sync.WaitGroup{}
 	quitCh := make(chan interface{})
 
 	cfg, _ := config.Configure()
 
-	router := server.NewRouter(fc)
+	router := server.NewRouter(p)
 	server := &http.Server{
 		Addr:         cfg.Host + ":" + strconv.Itoa(cfg.Port),
 		Handler:      router.RootHandler(),

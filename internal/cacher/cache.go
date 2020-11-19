@@ -1,26 +1,18 @@
 package cacher //nolint:golint,stylecheck
 
 import (
-	"context"
-	"crypto/sha256"
-	"encoding/base32"
-	"fmt"
 	"io"
-	"log"
-	"net/http"
 	"os"
-	"strings"
 	"sync"
 
-	"github.com/Demacr/image_previewer/internal/previewer"
+	domain "github.com/Demacr/image_previewer/internal/domain/types"
 	"github.com/pkg/errors"
 )
 
 type Cache interface {
-	GetImage(url string, width int, height int) (*DownloadedImage, error)
-	set(key string, value *DownloadedImage) error // Добавить значение в кэш по ключу
-	get(key string) (*DownloadedImage, error)     // Получить значение из кэша по ключу
-	clear()                                       // Очистить кэш
+	Set(key string, value *domain.DownloadedImage) error // Добавить значение в кэш по ключу
+	Get(key string) (*domain.DownloadedImage, error)     // Получить значение из кэша по ключу
+	clear()                                              // Очистить кэш
 }
 
 type lruCache struct {
@@ -30,59 +22,7 @@ type lruCache struct {
 	mutex    sync.Mutex
 }
 
-type DownloadedImage struct {
-	Buffer io.ReadCloser
-	Header http.Header
-}
-
-func (lc *lruCache) GetImage(url string, width int, height int) (*DownloadedImage, error) {
-	nameBytes := sha256.Sum256([]byte(fmt.Sprintf("%v%v%v", url, width, height)))
-	key := base32.StdEncoding.EncodeToString(nameBytes[:])
-	result, err := lc.get(key)
-	if err != nil {
-		return nil, errors.Wrap(err, "error during getting image from disk cache")
-	}
-	if result != nil {
-		log.Println("get image from cache")
-		return result, nil
-	}
-
-	client := http.Client{}
-	req, err := http.NewRequestWithContext(context.Background(), "GET", "http://"+url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error during creating request")
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "error during getting image")
-	}
-	defer resp.Body.Close()
-
-	if !strings.HasPrefix(resp.Header.Get("Content-Type"), "image/") {
-		return nil, errors.New("wrong Content-Type")
-	}
-
-	previwedImage, err := previewer.Preview(resp.Body, width, height)
-	if err != nil {
-		return nil, errors.Wrap(err, "error during image previewing")
-	}
-
-	result = &DownloadedImage{
-		Buffer: previwedImage,
-		Header: resp.Header,
-	}
-
-	if err = lc.set(key, result); err != nil {
-		return nil, errors.Wrap(err, "error during saving previewed image")
-	}
-	result, err = lc.get(key)
-	if err != nil {
-		return nil, errors.Wrap(err, "error during getting image from disk cache (new)")
-	}
-	return result, nil
-}
-
-func (lc *lruCache) set(key string, value *DownloadedImage) error {
+func (lc *lruCache) Set(key string, value *domain.DownloadedImage) error {
 	lc.mutex.Lock()
 	defer lc.mutex.Unlock()
 
@@ -113,7 +53,7 @@ func (lc *lruCache) set(key string, value *DownloadedImage) error {
 	return nil
 }
 
-func (lc *lruCache) get(key string) (value *DownloadedImage, err error) {
+func (lc *lruCache) Get(key string) (value *domain.DownloadedImage, err error) {
 	lc.mutex.Lock()
 	defer lc.mutex.Unlock()
 
@@ -138,7 +78,7 @@ func (lc *lruCache) clear() {
 
 type cacheItem *listItem
 type queueItem struct {
-	value *DownloadedImage
+	value *domain.DownloadedImage
 	key   string
 }
 

@@ -9,7 +9,7 @@ build-local:
 	go build  -o image_previewer ./cmd/image_previewer/...
 
 test-unit:
-	go test -race ./... -count=10 -cover
+	go test -race ./... -count=100 -cover
 
 test-integration:
 	docker-compose -f deployments/docker-compose.test.yml up -d

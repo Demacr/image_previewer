@@ -3,16 +3,16 @@ package server
 import (
 	"net/http"
 
-	"github.com/Demacr/image_previewer/internal/cacher"
+	domain "github.com/Demacr/image_previewer/internal/domain/previewer"
 )
 
 type RootHandler struct {
 	fillHandler *FillHandler
 }
 
-func newRootHandler(fc cacher.Cache) *RootHandler {
+func newRootHandler(p domain.Previewer) *RootHandler {
 	return &RootHandler{
-		fillHandler: newFillHandler(fc),
+		fillHandler: newFillHandler(p),
 	}
 }
 
